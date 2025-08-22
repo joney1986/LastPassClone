@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, TextInput } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, TextInput, ActivityIndicator, RefreshControl } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useIsFocused } from '@react-navigation/native';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
@@ -8,10 +8,13 @@ const HomeScreen = ({ navigation }) => {
   const [passwords, setPasswords] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredPasswords, setFilteredPasswords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const isFocused = useIsFocused();
 
   // This function will be moved to an API service file in a larger app
   const fetchPasswords = async () => {
+    setLoading(true);
     const token = await SecureStore.getItemAsync('token');
     if (!token) {
       navigation.replace('Login');
@@ -36,6 +39,8 @@ const HomeScreen = ({ navigation }) => {
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'An error occurred while fetching passwords.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -57,6 +62,12 @@ const HomeScreen = ({ navigation }) => {
       setFilteredPasswords(filtered);
     }
   }, [searchQuery, passwords]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchPasswords();
+    setRefreshing(false);
+  }, []);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity style={styles.itemContainer} onPress={() => navigation.navigate('PasswordModal', { password: item })}>
@@ -80,13 +91,20 @@ const HomeScreen = ({ navigation }) => {
       <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('PasswordModal')}>
         <Text style={styles.addButtonText}>Add New Password</Text>
       </TouchableOpacity>
-      <FlatList
-        data={filteredPasswords}
-        renderItem={renderItem}
-        keyExtractor={item => item.id.toString()}
-        ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyText}>No passwords saved yet.</Text></View>}
-        contentContainerStyle={{ paddingBottom: SIZES.padding }}
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
+      ) : (
+        <FlatList
+          data={filteredPasswords}
+          renderItem={renderItem}
+          keyExtractor={item => item.id.toString()}
+          ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyText}>No passwords saved yet.</Text></View>}
+          contentContainerStyle={{ paddingBottom: SIZES.padding }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+          }
+        />
+      )}
     </View>
   );
 };
@@ -159,6 +177,11 @@ const styles = StyleSheet.create({
     ...FONTS.body,
     color: COLORS.textSecondary,
   },
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
 });
 
 export default HomeScreen;

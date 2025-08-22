@@ -1,36 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useIsFocused } from '@react-navigation/native';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
 
 const NotesListScreen = ({ navigation }) => {
   const [notes, setNotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const isFocused = useIsFocused();
 
-  useEffect(() => {
-    const fetchNotes = async () => {
-      const token = await SecureStore.getItemAsync('token');
-      try {
-        const response = await fetch('http://localhost:3000/api/notes', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setNotes(data.data);
-        } else {
-          Alert.alert('Error', data.error || 'Failed to fetch notes');
-        }
-      } catch (error) {
-        console.error(error);
-        Alert.alert('Error', 'An error occurred while fetching notes.');
+  const fetchNotes = async () => {
+    setLoading(true);
+    const token = await SecureStore.getItemAsync('token');
+    try {
+      const response = await fetch('http://localhost:3000/api/notes', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setNotes(data.data);
+      } else {
+        Alert.alert('Error', data.error || 'Failed to fetch notes');
       }
-    };
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'An error occurred while fetching notes.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (isFocused) {
       fetchNotes();
     }
   }, [isFocused]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchNotes();
+    setRefreshing(false);
+  }, []);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity style={styles.itemContainer} onPress={() => navigation.navigate('NoteDetail', { note: item })}>
@@ -44,13 +55,20 @@ const NotesListScreen = ({ navigation }) => {
       <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('NoteDetail')}>
         <Text style={styles.addButtonText}>Add New Note</Text>
       </TouchableOpacity>
-      <FlatList
-        data={notes}
-        renderItem={renderItem}
-        keyExtractor={item => item.id.toString()}
-        ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyText}>No secure notes yet.</Text></View>}
-        contentContainerStyle={{ paddingBottom: SIZES.padding }}
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
+      ) : (
+        <FlatList
+          data={notes}
+          renderItem={renderItem}
+          keyExtractor={item => item.id.toString()}
+          ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyText}>No secure notes yet.</Text></View>}
+          contentContainerStyle={{ paddingBottom: SIZES.padding }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+          }
+        />
+      )}
     </View>
   );
 };
@@ -99,6 +117,11 @@ const styles = StyleSheet.create({
     ...FONTS.body,
     color: COLORS.textSecondary,
   },
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
 });
 
 export default NotesListScreen;
