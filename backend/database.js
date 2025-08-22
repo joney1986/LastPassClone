@@ -56,12 +56,31 @@ const db = new sqlite3.Database(DBSOURCE, (err) => {
             FOREIGN KEY (password_id) REFERENCES passwords(id) ON DELETE CASCADE
         )`,
         (err) => {
-            if (err) {
-                // Table already exists
-            } else {
-                console.log('Password history table created.');
-            }
+            if (err) { /* Table already exists */ } else { console.log('Password history table created.'); }
         });
+
+        // Secure Notes table
+        db.run(`CREATE TABLE IF NOT EXISTS secure_notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )`,
+        (err) => {
+            if (err) { /* Table already exists */ } else { console.log('Secure notes table created.'); }
+        });
+
+        db.run(`
+            CREATE TRIGGER IF NOT EXISTS update_notes_updated_at
+            AFTER UPDATE ON secure_notes
+            FOR EACH ROW
+            BEGIN
+                UPDATE secure_notes SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+            END;
+        `);
     }
 });
 
