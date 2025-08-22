@@ -19,8 +19,12 @@ const LoginScreen = ({ navigation }) => {
       const data = await response.json();
 
       if (response.ok) {
-        await SecureStore.setItemAsync('token', data.token);
-        navigation.replace('Home');
+        if (data.twoFactorRequired) {
+          navigation.navigate('TwoFALogin', { tempToken: data.tempToken });
+        } else {
+          await SecureStore.setItemAsync('token', data.token);
+          navigation.replace('MainApp');
+        }
       } else {
         Alert.alert('Login Failed', data.error);
       }

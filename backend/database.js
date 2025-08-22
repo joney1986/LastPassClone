@@ -14,6 +14,8 @@ const db = new sqlite3.Database(DBSOURCE, (err) => {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
             password TEXT,
+            two_fa_secret TEXT,
+            two_fa_enabled INTEGER DEFAULT 0,
             CONSTRAINT username_unique UNIQUE (username)
         )`,
         (err) => {

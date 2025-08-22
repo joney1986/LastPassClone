@@ -9,9 +9,12 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import NotesListScreen from '../screens/NotesListScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import PasswordModalScreen from '../screens/PasswordModalScreen';
 import PasswordHistoryScreen from '../screens/PasswordHistoryScreen';
 import NoteDetailScreen from '../screens/NoteDetailScreen';
+import TwoFASetupScreen from '../screens/TwoFASetupScreen';
+import TwoFALoginScreen from '../screens/TwoFALoginScreen';
 
 const RootStack = createStackNavigator();
 const MainStack = createStackNavigator();
@@ -39,6 +42,7 @@ const TabNavigator = () => {
         <Tab.Navigator>
             <Tab.Screen name="Passwords" component={HomeScreen} />
             <Tab.Screen name="Secure Notes" component={NotesListScreen} />
+            <Tab.Screen name="Settings" component={SettingsScreen} />
         </Tab.Navigator>
     );
 }
@@ -49,6 +53,8 @@ const MainStackNavigator = () => (
     <MainStack.Screen name="Login" component={LoginScreen} />
     <MainStack.Screen name="Register" component={RegisterScreen} />
     <MainStack.Screen name="MainApp" component={TabNavigator} options={{ headerShown: false }} />
+    <MainStack.Screen name="TwoFASetup" component={TwoFASetupScreen} />
+    <MainStack.Screen name="TwoFALogin" component={TwoFALoginScreen} />
   </MainStack.Navigator>
 );
 
