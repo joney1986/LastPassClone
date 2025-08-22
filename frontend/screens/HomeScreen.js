@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, FlatList, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, TextInput } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useIsFocused } from '@react-navigation/native';
+import { COLORS, SIZES, FONTS } from '../constants/theme';
 
 const HomeScreen = ({ navigation }) => {
   const [passwords, setPasswords] = useState([]);
@@ -9,26 +10,22 @@ const HomeScreen = ({ navigation }) => {
   const [filteredPasswords, setFilteredPasswords] = useState([]);
   const isFocused = useIsFocused();
 
+  // This function will be moved to an API service file in a larger app
   const fetchPasswords = async () => {
     const token = await SecureStore.getItemAsync('token');
     if (!token) {
       navigation.replace('Login');
       return;
     }
-
     try {
       const response = await fetch('http://localhost:3000/api/passwords', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
-
       if (response.status === 401) {
         await SecureStore.deleteItemAsync('token');
         navigation.replace('Login');
         return;
       }
-
       const data = await response.json();
       if (response.ok) {
         setPasswords(data.data);
@@ -61,11 +58,6 @@ const HomeScreen = ({ navigation }) => {
     }
   }, [searchQuery, passwords]);
 
-  const handleLogout = async () => {
-    await SecureStore.deleteItemAsync('token');
-    navigation.replace('Login');
-  };
-
   const renderItem = ({ item }) => (
     <TouchableOpacity style={styles.itemContainer} onPress={() => navigation.navigate('PasswordModal', { password: item })}>
       <View style={styles.itemHeader}>
@@ -81,17 +73,20 @@ const HomeScreen = ({ navigation }) => {
       <TextInput
         style={styles.searchInput}
         placeholder="Search by site or username..."
+        placeholderTextColor={COLORS.textSecondary}
         value={searchQuery}
         onChangeText={setSearchQuery}
       />
-      <Button title="Add New Password" onPress={() => navigation.navigate('PasswordModal')} />
+      <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('PasswordModal')}>
+        <Text style={styles.addButtonText}>Add New Password</Text>
+      </TouchableOpacity>
       <FlatList
         data={filteredPasswords}
         renderItem={renderItem}
         keyExtractor={item => item.id.toString()}
-        ListEmptyComponent={<Text>No passwords saved yet.</Text>}
+        ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyText}>No passwords saved yet.</Text></View>}
+        contentContainerStyle={{ paddingBottom: SIZES.padding }}
       />
-      <Button title="Logout" onPress={handleLogout} />
     </View>
   );
 };
@@ -99,46 +94,70 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: SIZES.padding,
+    backgroundColor: COLORS.background,
   },
   searchInput: {
-    height: 40,
-    borderColor: 'gray',
+    ...FONTS.body,
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.divider,
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    marginBottom: 16,
+    borderRadius: SIZES.buttonRadius,
+    padding: SIZES.margin,
+    marginBottom: SIZES.margin,
+    color: COLORS.textPrimary,
+  },
+  addButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: SIZES.buttonRadius,
+    padding: SIZES.margin,
+    alignItems: 'center',
+    marginBottom: SIZES.margin,
+  },
+  addButtonText: {
+    ...FONTS.bodyBold,
+    color: COLORS.surface,
   },
   itemContainer: {
-    backgroundColor: '#f9f9f9',
-    padding: 16,
-    marginVertical: 8,
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    padding: SIZES.margin,
+    marginVertical: SIZES.margin / 2,
+    borderRadius: SIZES.radius,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: COLORS.divider,
   },
   itemHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: SIZES.margin / 2,
   },
   itemSite: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONTS.h2,
+    color: COLORS.textPrimary,
   },
   itemCategory: {
-    fontSize: 12,
-    color: 'white',
-    backgroundColor: 'blue',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
+    ...FONTS.caption,
+    color: COLORS.surface,
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: SIZES.margin / 2,
+    paddingVertical: SIZES.margin / 4,
+    borderRadius: SIZES.buttonRadius / 2,
     overflow: 'hidden',
   },
   itemUsername: {
-    fontSize: 14,
-    color: 'gray',
+    ...FONTS.body,
+    color: COLORS.textSecondary,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SIZES.padding * 2,
+  },
+  emptyText: {
+    ...FONTS.body,
+    color: COLORS.textSecondary,
   },
 });
 

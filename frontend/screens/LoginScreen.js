@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { COLORS, SIZES, FONTS } from '../constants/theme';
 
 const LoginScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
@@ -36,10 +37,11 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+      <Text style={styles.title}>Welcome Back</Text>
       <TextInput
         style={styles.input}
         placeholder="Username"
+        placeholderTextColor={COLORS.textSecondary}
         value={username}
         onChangeText={setUsername}
         autoCapitalize="none"
@@ -47,15 +49,17 @@ const LoginScreen = ({ navigation }) => {
       <TextInput
         style={styles.input}
         placeholder="Password"
+        placeholderTextColor={COLORS.textSecondary}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
-      <Button title="Login" onPress={handleLogin} />
-      <Button
-        title="Don't have an account? Register"
-        onPress={() => navigation.navigate('Register')}
-      />
+      <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
+        <Text style={styles.primaryButtonText}>Login</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Register')}>
+        <Text style={styles.secondaryButtonText}>Don't have an account? Register</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -64,19 +68,43 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 16,
+    padding: SIZES.padding,
+    backgroundColor: COLORS.background,
   },
   title: {
-    fontSize: 24,
-    marginBottom: 16,
+    ...FONTS.h1,
+    color: COLORS.textPrimary,
     textAlign: 'center',
+    marginBottom: SIZES.padding * 2,
   },
   input: {
-    height: 40,
-    borderColor: 'gray',
+    ...FONTS.body,
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.divider,
     borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 8,
+    borderRadius: SIZES.buttonRadius,
+    padding: SIZES.margin,
+    marginBottom: SIZES.margin,
+    color: COLORS.textPrimary,
+  },
+  primaryButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: SIZES.buttonRadius,
+    padding: SIZES.margin,
+    alignItems: 'center',
+    marginTop: SIZES.margin,
+  },
+  primaryButtonText: {
+    ...FONTS.bodyBold,
+    color: COLORS.surface,
+  },
+  secondaryButton: {
+    padding: SIZES.margin,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    ...FONTS.body,
+    color: COLORS.primary,
   },
 });
 

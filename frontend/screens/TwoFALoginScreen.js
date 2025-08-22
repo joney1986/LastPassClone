@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Button, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { COLORS, SIZES, FONTS } from '../constants/theme';
 
 const TwoFALoginScreen = ({ route, navigation }) => {
   const { tempToken } = route.params;
@@ -30,16 +31,19 @@ const TwoFALoginScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Enter 2FA Code</Text>
+      <Text style={styles.title}>Enter Verification Code</Text>
       <TextInput
         style={styles.input}
         placeholder="6-Digit Code"
+        placeholderTextColor={COLORS.textSecondary}
         value={token}
         onChangeText={setToken}
         keyboardType="numeric"
         maxLength={6}
       />
-      <Button title="Login" onPress={handleLogin} />
+      <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
+        <Text style={styles.primaryButtonText}>Verify & Login</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -49,22 +53,39 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: SIZES.padding,
+    backgroundColor: COLORS.background,
   },
   title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 24,
+    ...FONTS.h1,
+    color: COLORS.textPrimary,
+    marginBottom: SIZES.padding * 2,
+    textAlign: 'center',
   },
   input: {
-    height: 40,
-    width: '80%',
-    borderColor: 'gray',
+    ...FONTS.h1,
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.divider,
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    marginBottom: 16,
+    borderRadius: SIZES.buttonRadius,
+    padding: SIZES.margin,
+    marginBottom: SIZES.margin,
+    color: COLORS.textPrimary,
+    width: '80%',
     textAlign: 'center',
+    letterSpacing: 10,
+  },
+  primaryButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: SIZES.buttonRadius,
+    padding: SIZES.margin,
+    alignItems: 'center',
+    marginTop: SIZES.margin,
+    width: '80%',
+  },
+  primaryButtonText: {
+    ...FONTS.bodyBold,
+    color: COLORS.surface,
   },
 });
 

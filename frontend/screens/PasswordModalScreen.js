@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { COLORS, SIZES, FONTS } from '../constants/theme';
 
 const PasswordModalScreen = ({ route, navigation }) => {
   const [site, setSite] = useState('');
@@ -26,26 +27,19 @@ const PasswordModalScreen = ({ route, navigation }) => {
     const token = await SecureStore.getItemAsync('token');
     const url = isEditMode ? `http://localhost:3000/api/passwords/${passwordId}` : 'http://localhost:3000/api/passwords';
     const method = isEditMode ? 'PUT' : 'POST';
-
     try {
       const response = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ site, username, password, category }),
       });
-
-      const data = await response.json();
-
       if (response.ok) {
         navigation.goBack();
       } else {
+        const data = await response.json();
         Alert.alert('Error', data.error || 'Failed to save password');
       }
     } catch (error) {
-      console.error(error);
       Alert.alert('Error', 'An error occurred while saving the password.');
     }
   };
@@ -55,11 +49,8 @@ const PasswordModalScreen = ({ route, navigation }) => {
     try {
         const response = await fetch(`http://localhost:3000/api/passwords/${passwordId}`, {
             method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
+            headers: { 'Authorization': `Bearer ${token}` },
         });
-
         if (response.ok) {
             navigation.goBack();
         } else {
@@ -67,94 +58,130 @@ const PasswordModalScreen = ({ route, navigation }) => {
             Alert.alert('Error', data.error || 'Failed to delete password');
         }
     } catch (error) {
-        console.error(error);
         Alert.alert('Error', 'An error occurred while deleting the password.');
     }
   };
 
+  const generatePassword = (length = 16) => {
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+    let newPassword = "";
+    for (let i = 0; i < length; ++i) {
+        newPassword += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    // A simple shuffle
+    return newPassword.split('').sort(() => 0.5 - Math.random()).join('');
+  };
+
   return (
     <View style={styles.container}>
+        <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.closeButtonText}>X</Text>
+        </TouchableOpacity>
       <Text style={styles.title}>{isEditMode ? 'Edit Password' : 'Add Password'}</Text>
-      <TextInput style={styles.input} placeholder="Website" value={site} onChangeText={setSite} />
-      <TextInput style={styles.input} placeholder="Username" value={username} onChangeText={setUsername} />
-      <TextInput style={styles.input} placeholder="Category (optional)" value={category} onChangeText={setCategory} />
+      <TextInput style={styles.input} placeholder="Website" value={site} onChangeText={setSite} placeholderTextColor={COLORS.textSecondary} />
+      <TextInput style={styles.input} placeholder="Username" value={username} onChangeText={setUsername} placeholderTextColor={COLORS.textSecondary} />
+      <TextInput style={styles.input} placeholder="Category (optional)" value={category} onChangeText={setCategory} placeholderTextColor={COLORS.textSecondary} />
       <View style={styles.passwordContainer}>
-        <TextInput style={styles.passwordInput} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
-        <Button title="Generate" onPress={() => setPassword(generatePassword())} />
+        <TextInput style={styles.passwordInput} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry placeholderTextColor={COLORS.textSecondary} />
+        <TouchableOpacity style={styles.generateButton} onPress={() => setPassword(generatePassword())}>
+            <Text style={styles.generateButtonText}>Generate</Text>
+        </TouchableOpacity>
       </View>
-      <Button title="Save" onPress={handleSave} />
+      <TouchableOpacity style={styles.primaryButton} onPress={handleSave}>
+        <Text style={styles.primaryButtonText}>Save</Text>
+      </TouchableOpacity>
       {isEditMode && (
         <View style={styles.buttonContainer}>
-            <Button title="Delete" onPress={handleDelete} color="red" />
-            <Button title="View History" onPress={() => navigation.navigate('PasswordHistory', { passwordId })} />
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleDelete}>
+                <Text style={styles.secondaryButtonText}>Delete</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('PasswordHistory', { passwordId })}>
+                <Text style={styles.secondaryButtonText}>View History</Text>
+            </TouchableOpacity>
         </View>
       )}
     </View>
   );
 };
 
-const generatePassword = (length = 16) => {
-    const charset = {
-        lower: 'abcdefghijklmnopqrstuvwxyz',
-        upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-        numbers: '0123456789',
-        symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
-    };
-
-    let password = '';
-    const allChars = Object.values(charset).join('');
-
-    // Ensure at least one character from each set
-    password += charset.lower[Math.floor(Math.random() * charset.lower.length)];
-    password += charset.upper[Math.floor(Math.random() * charset.upper.length)];
-    password += charset.numbers[Math.floor(Math.random() * charset.numbers.length)];
-    password += charset.symbols[Math.floor(Math.random() * charset.symbols.length)];
-
-    // Fill the rest of the password length
-    for (let i = password.length; i < length; i++) {
-        password += allChars[Math.floor(Math.random() * allChars.length)];
-    }
-
-    // Shuffle the password to randomize the order of the guaranteed characters
-    return password.split('').sort(() => 0.5 - Math.random()).join('');
-}
-
 const styles = StyleSheet.create({
     container: {
       flex: 1,
-      padding: 16,
-      justifyContent: 'center',
+      padding: SIZES.padding,
+      paddingTop: SIZES.padding * 3,
+      backgroundColor: COLORS.background,
+    },
+    closeButton: {
+        position: 'absolute',
+        top: SIZES.padding * 2,
+        right: SIZES.padding,
+    },
+    closeButtonText: {
+        ...FONTS.h2,
+        color: COLORS.textSecondary,
     },
     title: {
-      fontSize: 24,
-      marginBottom: 24,
+      ...FONTS.h1,
+      color: COLORS.textPrimary,
       textAlign: 'center',
+      marginVertical: SIZES.padding,
     },
     input: {
-      height: 40,
-      borderColor: 'gray',
+      ...FONTS.body,
+      backgroundColor: COLORS.surface,
+      borderColor: COLORS.divider,
       borderWidth: 1,
-      marginBottom: 16,
-      paddingHorizontal: 8,
+      borderRadius: SIZES.buttonRadius,
+      padding: SIZES.margin,
+      marginBottom: SIZES.margin,
+      color: COLORS.textPrimary,
     },
     passwordContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      borderColor: 'gray',
+      backgroundColor: COLORS.surface,
+      borderColor: COLORS.divider,
       borderWidth: 1,
-      marginBottom: 16,
+      borderRadius: SIZES.buttonRadius,
+      marginBottom: SIZES.margin,
     },
     passwordInput: {
-      height: 40,
-      paddingHorizontal: 8,
+      ...FONTS.body,
       flex: 1,
+      padding: SIZES.margin,
+      color: COLORS.textPrimary,
+    },
+    generateButton: {
+        padding: SIZES.margin,
+        borderLeftWidth: 1,
+        borderLeftColor: COLORS.divider,
+    },
+    generateButtonText: {
+        ...FONTS.body,
+        color: COLORS.primary,
+    },
+    primaryButton: {
+        backgroundColor: COLORS.primary,
+        borderRadius: SIZES.buttonRadius,
+        padding: SIZES.margin,
+        alignItems: 'center',
+    },
+    primaryButtonText: {
+        ...FONTS.bodyBold,
+        color: COLORS.surface,
     },
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        marginTop: 20,
-    }
+        marginTop: SIZES.margin,
+    },
+    secondaryButton: {
+        padding: SIZES.margin,
+    },
+    secondaryButtonText: {
+        ...FONTS.body,
+        color: COLORS.primary,
+    },
   });
 
 export default PasswordModalScreen;

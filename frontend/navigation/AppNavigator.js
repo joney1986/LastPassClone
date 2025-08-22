@@ -39,7 +39,16 @@ const AuthLoadingScreen = ({ navigation }) => {
 
 const TabNavigator = () => {
     return (
-        <Tab.Navigator>
+        <Tab.Navigator
+            screenOptions={{
+                tabBarActiveTintColor: COLORS.primary,
+                tabBarInactiveTintColor: COLORS.textSecondary,
+                tabBarStyle: { backgroundColor: COLORS.surface },
+                tabBarLabelStyle: { ...FONTS.caption, fontSize: 10 },
+                headerStyle: { backgroundColor: COLORS.surface },
+                headerTitleStyle: { ...FONTS.h2, color: COLORS.textPrimary },
+            }}
+        >
             <Tab.Screen name="Passwords" component={HomeScreen} />
             <Tab.Screen name="Secure Notes" component={NotesListScreen} />
             <Tab.Screen name="Settings" component={SettingsScreen} />

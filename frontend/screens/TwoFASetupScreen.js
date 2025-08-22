@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Button, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import * as SecureStore from 'expo-secure-store';
+import { COLORS, SIZES, FONTS } from '../constants/theme';
 
 const TwoFASetupScreen = ({ navigation }) => {
   const [qrCodeUrl, setQrCodeUrl] = useState(null);
@@ -17,6 +18,7 @@ const TwoFASetupScreen = ({ navigation }) => {
         });
         const data = await response.json();
         if (response.ok) {
+          // In a real app, you might get a otpauth:// URI, which QRCode can handle directly
           setQrCodeUrl(data.qrCodeUrl);
         } else {
           Alert.alert('Error', 'Could not start 2FA setup.');
@@ -33,10 +35,7 @@ const TwoFASetupScreen = ({ navigation }) => {
     try {
       const response = await fetch('http://localhost:3000/api/users/2fa/verify', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
         body: JSON.stringify({ token }),
       });
       const data = await response.json();
@@ -53,26 +52,29 @@ const TwoFASetupScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Set Up Two-Factor Authentication</Text>
+      <Text style={styles.title}>Set Up 2FA</Text>
       <Text style={styles.instructions}>
-        Scan the QR code with your authenticator app, then enter the 6-digit code below to verify.
+        Scan this QR code with your authenticator app (like Google Authenticator), then enter the 6-digit code below to complete the setup.
       </Text>
-      {qrCodeUrl ? (
-        <View style={styles.qrContainer}>
-            <QRCode value={qrCodeUrl} size={200} />
-        </View>
-      ) : (
-        <Text>Loading QR Code...</Text>
-      )}
+      <View style={styles.qrContainer}>
+        {qrCodeUrl ? (
+            <QRCode value={qrCodeUrl} size={200} backgroundColor={COLORS.surface} color={COLORS.textPrimary} />
+        ) : (
+            <Text style={styles.loadingText}>Loading QR Code...</Text>
+        )}
+      </View>
       <TextInput
         style={styles.input}
         placeholder="6-Digit Code"
+        placeholderTextColor={COLORS.textSecondary}
         value={token}
         onChangeText={setToken}
         keyboardType="numeric"
         maxLength={6}
       />
-      <Button title="Verify & Enable" onPress={handleVerify} />
+      <TouchableOpacity style={styles.primaryButton} onPress={handleVerify}>
+        <Text style={styles.primaryButtonText}>Verify & Enable</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -80,32 +82,55 @@ const TwoFASetupScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: SIZES.padding,
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: COLORS.background,
   },
   title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 16,
+    ...FONTS.h1,
+    color: COLORS.textPrimary,
+    marginBottom: SIZES.margin,
     textAlign: 'center',
   },
   instructions: {
+    ...FONTS.body,
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: SIZES.padding,
   },
   qrContainer: {
-    marginBottom: 24,
+    padding: SIZES.margin,
+    backgroundColor: COLORS.surface,
+    borderRadius: SIZES.radius,
+    marginBottom: SIZES.padding,
+  },
+  loadingText: {
+      ...FONTS.body,
+      color: COLORS.textSecondary,
   },
   input: {
-    height: 40,
-    width: '80%',
-    borderColor: 'gray',
+    ...FONTS.h1,
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.divider,
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    marginBottom: 16,
+    borderRadius: SIZES.buttonRadius,
+    padding: SIZES.margin,
+    marginBottom: SIZES.margin,
+    color: COLORS.textPrimary,
+    width: '80%',
     textAlign: 'center',
+    letterSpacing: 10,
+  },
+  primaryButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: SIZES.buttonRadius,
+    padding: SIZES.margin,
+    alignItems: 'center',
+    width: '80%',
+  },
+  primaryButtonText: {
+    ...FONTS.bodyBold,
+    color: COLORS.surface,
   },
 });
 

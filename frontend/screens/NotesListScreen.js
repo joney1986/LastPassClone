@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Button, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useIsFocused } from '@react-navigation/native';
+import { COLORS, SIZES, FONTS } from '../constants/theme';
 
 const NotesListScreen = ({ navigation }) => {
   const [notes, setNotes] = useState([]);
@@ -40,12 +41,15 @@ const NotesListScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Button title="Add New Note" onPress={() => navigation.navigate('NoteDetail')} />
+      <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('NoteDetail')}>
+        <Text style={styles.addButtonText}>Add New Note</Text>
+      </TouchableOpacity>
       <FlatList
         data={notes}
         renderItem={renderItem}
         keyExtractor={item => item.id.toString()}
-        ListEmptyComponent={<Text>No secure notes yet.</Text>}
+        ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyText}>No secure notes yet.</Text></View>}
+        contentContainerStyle={{ paddingBottom: SIZES.padding }}
       />
     </View>
   );
@@ -54,24 +58,46 @@ const NotesListScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: SIZES.padding,
+    backgroundColor: COLORS.background,
+  },
+  addButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: SIZES.buttonRadius,
+    padding: SIZES.margin,
+    alignItems: 'center',
+    marginBottom: SIZES.margin,
+  },
+  addButtonText: {
+    ...FONTS.bodyBold,
+    color: COLORS.surface,
   },
   itemContainer: {
-    backgroundColor: '#f9f9f9',
-    padding: 16,
-    marginVertical: 8,
-    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    padding: SIZES.margin,
+    marginVertical: SIZES.margin / 2,
+    borderRadius: SIZES.radius,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: COLORS.divider,
   },
   itemTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONTS.h2,
+    color: COLORS.textPrimary,
   },
   itemDate: {
-    fontSize: 12,
-    color: 'gray',
-    marginTop: 4,
+    ...FONTS.caption,
+    color: COLORS.textSecondary,
+    marginTop: SIZES.margin / 2,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SIZES.padding * 2,
+  },
+  emptyText: {
+    ...FONTS.body,
+    color: COLORS.textSecondary,
   },
 });
 
