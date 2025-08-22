@@ -10,8 +10,7 @@ const db = require('../database.js');
 const auth = require('../middleware/auth');
 
 const saltRounds = 10;
-// In a real application, this secret should be stored in an environment variable
-const jwtSecret = 'your_super_secret_key';
+const jwtSecret = process.env.JWT_SECRET;
 
 // Rate limiting for login
 const loginLimiter = rateLimit({

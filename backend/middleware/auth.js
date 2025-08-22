@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-// In a real application, this secret should be stored in an environment variable
-const jwtSecret = 'your_super_secret_key';
+const jwtSecret = process.env.JWT_SECRET;
 
 const auth = (req, res, next) => {
   const authHeader = req.headers.authorization;

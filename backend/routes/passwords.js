@@ -5,8 +5,7 @@ const { body, validationResult } = require('express-validator');
 const db = require('../database.js');
 const auth = require('../middleware/auth');
 
-// In a real application, this secret should be stored in an environment variable
-const encryptionSecret = 'another_super_secret_key';
+const encryptionSecret = process.env.ENCRYPTION_SECRET;
 
 // Protect all routes in this file
 router.use(auth);
