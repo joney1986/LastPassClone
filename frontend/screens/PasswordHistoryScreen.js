@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
+import { VaultContext } from '../context/VaultContext';
+import { decryptData } from '../utils/crypto';
 
 const PasswordHistoryScreen = ({ route }) => {
   const { passwordId } = route.params;
+  const { vaultKey } = useContext(VaultContext);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchHistory = async () => {
+      if (!vaultKey) return;
       const token = await SecureStore.getItemAsync('token');
       try {
         const response = await fetch(`http://localhost:3000/api/passwords/${passwordId}/history`, {
@@ -19,7 +23,11 @@ const PasswordHistoryScreen = ({ route }) => {
         });
         const data = await response.json();
         if (response.ok) {
-          setHistory(data.data);
+          const decryptedHistory = data.data.map(item => ({
+            ...item,
+            password: decryptData(item.password, vaultKey)
+          }));
+          setHistory(decryptedHistory);
         } else {
           Alert.alert('Error', data.error || 'Failed to fetch history');
         }
@@ -32,7 +40,7 @@ const PasswordHistoryScreen = ({ route }) => {
     };
 
     fetchHistory();
-  }, [passwordId]);
+  }, [passwordId, vaultKey]);
 
   const renderItem = ({ item }) => (
     <View style={styles.itemContainer}>

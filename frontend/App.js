@@ -2,6 +2,7 @@ import React from 'react';
 import AppNavigator from './navigation/AppNavigator';
 import { useFonts } from 'expo-font';
 import { AppProvider } from './context/AppContext';
+import { VaultProvider } from './context/VaultContext';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -16,7 +17,9 @@ export default function App() {
 
   return (
     <AppProvider>
-      <AppNavigator />
+      <VaultProvider>
+        <AppNavigator />
+      </VaultProvider>
     </AppProvider>
   );
 }

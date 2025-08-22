@@ -1,24 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const CryptoJS = require('crypto-js');
 const { body, validationResult } = require('express-validator');
 const db = require('../database.js');
 const auth = require('../middleware/auth');
 
-const encryptionSecret = process.env.ENCRYPTION_SECRET; // Use the same key as for passwords
-
 // Protect all routes in this file
 router.use(auth);
-
-// Helper functions for encryption and decryption
-const encrypt = (text) => {
-  return CryptoJS.AES.encrypt(text, encryptionSecret).toString();
-};
-
-const decrypt = (ciphertext) => {
-  const bytes = CryptoJS.AES.decrypt(ciphertext, encryptionSecret);
-  return bytes.toString(CryptoJS.enc.Utf8);
-};
 
 // GET all notes for the logged-in user
 router.get('/', (req, res) => {
@@ -34,7 +21,7 @@ router.get('/', (req, res) => {
 // POST a new note
 router.post('/',
   body('title').notEmpty().trim().escape(),
-  body('content').notEmpty(),
+  body('content').notEmpty(), // This is now the encrypted ciphertext
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -42,9 +29,8 @@ router.post('/',
     }
 
     const { title, content } = req.body;
-    const encryptedContent = encrypt(content);
     const sql = 'INSERT INTO secure_notes (user_id, title, content) VALUES (?,?,?)';
-    const params = [req.user.id, title, encryptedContent];
+    const params = [req.user.id, title, content];
 
     db.run(sql, params, function (err) {
       if (err) {
@@ -64,14 +50,15 @@ router.get('/:id', (req, res) => {
       if (!row) {
         return res.status(404).json({ error: 'Note not found or user not authorized' });
       }
-      res.json({ data: { ...row, content: decrypt(row.content) } });
+      // Send the encrypted data directly
+      res.json({ data: row });
     });
 });
 
 // PUT (update) a note by id
 router.put('/:id',
   body('title').notEmpty().trim().escape(),
-  body('content').notEmpty(),
+  body('content').notEmpty(), // This is now the encrypted ciphertext
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -79,9 +66,8 @@ router.put('/:id',
     }
 
     const { title, content } = req.body;
-    const encryptedContent = encrypt(content);
     const sql = 'UPDATE secure_notes SET title = ?, content = ? WHERE id = ? AND user_id = ?';
-    const params = [title, encryptedContent, req.params.id, req.user.id];
+    const params = [title, content, req.params.id, req.user.id];
 
     db.run(sql, params, function (err) {
       if (err) {

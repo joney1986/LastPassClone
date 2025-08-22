@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
+import { VaultContext } from '../context/VaultContext';
+import { encryptData, decryptData } from '../utils/crypto';
 
 const NoteDetailScreen = ({ route, navigation }) => {
+  const { vaultKey } = useContext(VaultContext);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
@@ -20,6 +23,7 @@ const NoteDetailScreen = ({ route, navigation }) => {
   }, [route.params?.note]);
 
   const fetchNoteContent = async (id) => {
+    if (!vaultKey) return;
     const token = await SecureStore.getItemAsync('token');
     try {
       const response = await fetch(`http://localhost:3000/api/notes/${id}`, {
@@ -27,7 +31,7 @@ const NoteDetailScreen = ({ route, navigation }) => {
       });
       const data = await response.json();
       if (response.ok) {
-        setContent(data.data.content);
+        setContent(decryptData(data.data.content, vaultKey));
       } else {
         Alert.alert('Error', 'Failed to fetch note content.');
       }
@@ -37,14 +41,18 @@ const NoteDetailScreen = ({ route, navigation }) => {
   };
 
   const handleSave = async () => {
+    if (!vaultKey) return Alert.alert('Error', 'Vault is not open.');
     const token = await SecureStore.getItemAsync('token');
     const url = isEditMode ? `http://localhost:3000/api/notes/${noteId}` : 'http://localhost:3000/api/notes';
     const method = isEditMode ? 'PUT' : 'POST';
+
+    const encryptedContent = encryptData(content, vaultKey);
+
     try {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ title, content }),
+        body: JSON.stringify({ title, content: encryptedContent }),
       });
       if (response.ok) {
         navigation.goBack();

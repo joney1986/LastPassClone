@@ -24,21 +24,23 @@ const loginLimiter = rateLimit({
 router.post('/register',
   body('username').notEmpty().trim().escape(),
   body('password').isLength({ min: 8 }),
+  body('encryptedVaultKey').notEmpty(),
+  body('masterPasswordSalt').notEmpty(),
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { username, password } = req.body;
+    const { username, password, encryptedVaultKey, masterPasswordSalt } = req.body;
 
     bcrypt.hash(password, saltRounds, (err, hash) => {
       if (err) {
         return res.status(500).json({ error: 'Error hashing password' });
       }
 
-      const sql = 'INSERT INTO users (username, password) VALUES (?,?)';
-      const params = [username, hash];
+      const sql = 'INSERT INTO users (username, password, encrypted_vault_key, master_password_salt) VALUES (?,?,?,?)';
+      const params = [username, hash, encryptedVaultKey, masterPasswordSalt];
       db.run(sql, params, function (err, result) {
         if (err) {
           res.status(400).json({ "error": err.message })
@@ -83,7 +85,6 @@ router.post('/login',
         }
 
         if (row.two_fa_enabled) {
-            // 2FA is enabled, issue a temporary token
             const tempToken = jwt.sign({ id: row.id, username: row.username, type: '2fa' }, jwtSecret, { expiresIn: '5m' });
             res.json({
                 message: "2FA required",
@@ -91,11 +92,12 @@ router.post('/login',
                 tempToken: tempToken
             });
         } else {
-            // 2FA is not enabled, issue final token
             const token = jwt.sign({ id: row.id, username: row.username }, jwtSecret, { expiresIn: '1h' });
             res.json({
                 message: "success",
-                token: token
+                token: token,
+                encryptedVaultKey: row.encrypted_vault_key,
+                masterPasswordSalt: row.master_password_salt,
             });
         }
       });

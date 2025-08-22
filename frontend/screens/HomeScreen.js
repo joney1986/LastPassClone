@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, TextInput, ActivityIndicator, RefreshControl } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useIsFocused } from '@react-navigation/native';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
+import { VaultContext } from '../context/VaultContext';
+import { decryptData } from '../utils/crypto';
 
 const HomeScreen = ({ navigation }) => {
+  const { vaultKey } = useContext(VaultContext);
   const [passwords, setPasswords] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredPasswords, setFilteredPasswords] = useState([]);
@@ -12,8 +15,11 @@ const HomeScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const isFocused = useIsFocused();
 
-  // This function will be moved to an API service file in a larger app
   const fetchPasswords = async () => {
+    if (!vaultKey) {
+        setLoading(false);
+        return;
+    }
     setLoading(true);
     const token = await SecureStore.getItemAsync('token');
     if (!token) {
@@ -31,8 +37,13 @@ const HomeScreen = ({ navigation }) => {
       }
       const data = await response.json();
       if (response.ok) {
-        setPasswords(data.data);
-        setFilteredPasswords(data.data);
+        // Decrypt passwords before setting state
+        const decryptedPasswords = data.data.map(p => ({
+            ...p,
+            password: decryptData(p.password, vaultKey)
+        }));
+        setPasswords(decryptedPasswords);
+        setFilteredPasswords(decryptedPasswords);
       } else {
         Alert.alert('Error', data.error || 'Failed to fetch passwords');
       }

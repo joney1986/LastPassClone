@@ -1,19 +1,42 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
+import { generateRandomKey, deriveKeyFromPassword, encryptData, generateSalt } from '../utils/crypto';
 
 const RegisterScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [masterPassword, setMasterPassword] = useState('');
 
   const handleRegister = async () => {
+    if (!username || !password || !masterPassword) {
+        Alert.alert('Error', 'Please fill in all fields.');
+        return;
+    }
+    if (password.length < 8 || masterPassword.length < 8) {
+        Alert.alert('Error', 'Passwords must be at least 8 characters long.');
+        return;
+    }
+
     try {
+      // 1. Generate keys and salts
+      const vaultKey = await generateRandomKey();
+      const masterPasswordSalt = await generateSalt();
+
+      // 2. Derive key from master password and encrypt the vault key
+      const masterKey = await deriveKeyFromPassword(masterPassword, masterPasswordSalt);
+      const encryptedVaultKey = encryptData(vaultKey, masterKey);
+
+      // 3. Send to backend
       const response = await fetch('http://localhost:3000/api/users/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          password, // Login password sent in plaintext
+          encryptedVaultKey,
+          masterPasswordSalt,
+        }),
       });
 
       const data = await response.json();
@@ -23,7 +46,7 @@ const RegisterScreen = ({ navigation }) => {
           { text: 'OK', onPress: () => navigation.navigate('Login') },
         ]);
       } else {
-        Alert.alert('Registration Failed', data.error);
+        Alert.alert('Registration Failed', data.error || 'An error occurred.');
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -44,10 +67,18 @@ const RegisterScreen = ({ navigation }) => {
       />
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder="Login Password (min. 8 chars)"
         placeholderTextColor={COLORS.textSecondary}
         value={password}
         onChangeText={setPassword}
+        secureTextEntry
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Master Password (min. 8 chars)"
+        placeholderTextColor={COLORS.textSecondary}
+        value={masterPassword}
+        onChangeText={setMasterPassword}
         secureTextEntry
       />
       <TouchableOpacity style={styles.primaryButton} onPress={handleRegister}>

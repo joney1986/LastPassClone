@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
+import { VaultContext } from '../context/VaultContext';
+import { encryptData, decryptData } from '../utils/crypto';
 
 const PasswordModalScreen = ({ route, navigation }) => {
+  const { vaultKey } = useContext(VaultContext);
   const [site, setSite] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -14,24 +17,32 @@ const PasswordModalScreen = ({ route, navigation }) => {
   useEffect(() => {
     if (route.params?.password) {
       const { id, site, username, password, category } = route.params.password;
+      const decryptedPassword = decryptData(password, vaultKey);
       setSite(site);
       setUsername(username);
-      setPassword(password);
+      setPassword(decryptedPassword);
       setCategory(category || '');
       setPasswordId(id);
       setIsEditMode(true);
     }
-  }, [route.params?.password]);
+  }, [route.params?.password, vaultKey]);
 
   const handleSave = async () => {
+    if (!vaultKey) {
+        Alert.alert('Error', 'Vault is not open. Please re-login.');
+        return;
+    }
     const token = await SecureStore.getItemAsync('token');
     const url = isEditMode ? `http://localhost:3000/api/passwords/${passwordId}` : 'http://localhost:3000/api/passwords';
     const method = isEditMode ? 'PUT' : 'POST';
+
+    const encryptedPassword = encryptData(password, vaultKey);
+
     try {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ site, username, password, category }),
+        body: JSON.stringify({ site, username, password: encryptedPassword, category }),
       });
       if (response.ok) {
         navigation.goBack();

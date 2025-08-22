@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
+import { VaultContext } from '../context/VaultContext';
+import { deriveKeyFromPassword, decryptData } from '../utils/crypto';
 
 const TwoFALoginScreen = ({ route, navigation }) => {
-  const { tempToken } = route.params;
+  const { tempToken, masterPassword, encryptedVaultKey, masterPasswordSalt } = route.params;
   const [token, setToken] = useState('');
+  const { setVaultKey } = useContext(VaultContext);
 
   const handleLogin = async () => {
     try {
+      // Step 1: Verify 2FA token to get final session token
       const response = await fetch('http://localhost:3000/api/users/2fa/login', {
         method: 'POST',
         headers: {
@@ -18,12 +22,26 @@ const TwoFALoginScreen = ({ route, navigation }) => {
         body: JSON.stringify({ token }),
       });
       const data = await response.json();
-      if (response.ok) {
-        await SecureStore.setItemAsync('token', data.token);
-        navigation.replace('MainApp');
-      } else {
-        Alert.alert('Login Failed', data.error || 'Invalid 2FA token.');
+
+      if (!response.ok) {
+        return Alert.alert('Login Failed', data.error || 'Invalid 2FA token.');
       }
+
+      const finalToken = data.token;
+
+      // Step 2: Decrypt the vault key with the master password
+      const masterKey = await deriveKeyFromPassword(masterPassword, masterPasswordSalt);
+      const decryptedVaultKey = decryptData(encryptedVaultKey, masterKey);
+
+      if (!decryptedVaultKey) {
+          return Alert.alert('Login Failed', 'Incorrect Master Password.');
+      }
+
+      // Step 3: Store final session token and vault key, then navigate
+      await SecureStore.setItemAsync('token', finalToken);
+      setVaultKey(decryptedVaultKey);
+      navigation.replace('MainApp');
+
     } catch (error) {
       Alert.alert('Login Error', 'An error occurred during 2FA login.');
     }
