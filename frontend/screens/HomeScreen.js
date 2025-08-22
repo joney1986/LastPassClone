@@ -5,6 +5,8 @@ import { useIsFocused } from '@react-navigation/native';
 
 const HomeScreen = ({ navigation }) => {
   const [passwords, setPasswords] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredPasswords, setFilteredPasswords] = useState([]);
   const isFocused = useIsFocused();
 
   const fetchPasswords = async () => {
@@ -30,6 +32,7 @@ const HomeScreen = ({ navigation }) => {
       const data = await response.json();
       if (response.ok) {
         setPasswords(data.data);
+        setFilteredPasswords(data.data);
       } else {
         Alert.alert('Error', data.error || 'Failed to fetch passwords');
       }
@@ -44,6 +47,19 @@ const HomeScreen = ({ navigation }) => {
       fetchPasswords();
     }
   }, [isFocused]);
+
+  useEffect(() => {
+    if (searchQuery === '') {
+      setFilteredPasswords(passwords);
+    } else {
+      const lowercasedQuery = searchQuery.toLowerCase();
+      const filtered = passwords.filter(p =>
+        p.site.toLowerCase().includes(lowercasedQuery) ||
+        p.username.toLowerCase().includes(lowercasedQuery)
+      );
+      setFilteredPasswords(filtered);
+    }
+  }, [searchQuery, passwords]);
 
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('token');
@@ -62,9 +78,15 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search by site or username..."
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
       <Button title="Add New Password" onPress={() => navigation.navigate('PasswordModal')} />
       <FlatList
-        data={passwords}
+        data={filteredPasswords}
         renderItem={renderItem}
         keyExtractor={item => item.id.toString()}
         ListEmptyComponent={<Text>No passwords saved yet.</Text>}
@@ -78,6 +100,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+  },
+  searchInput: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    marginBottom: 16,
   },
   itemContainer: {
     backgroundColor: '#f9f9f9',
