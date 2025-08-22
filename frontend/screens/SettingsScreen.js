@@ -1,18 +1,60 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
 
 const SettingsScreen = ({ navigation }) => {
+  const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
+
+  useEffect(() => {
+    // Load the saved preference
+    const loadPreference = async () => {
+      const savedPref = await AsyncStorage.getItem('biometric_enabled');
+      setIsBiometricEnabled(savedPref === 'true');
+    };
+    loadPreference();
+  }, []);
+
+  const handleBiometricToggle = async (value) => {
+    if (value === true) {
+        // Check if hardware supports biometrics
+        const hasHardware = await LocalAuthentication.hasHardwareAsync();
+        if (!hasHardware) {
+            Alert.alert("Error", "Your device doesn't support biometric authentication.");
+            return;
+        }
+        // Check if biometrics are enrolled
+        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+        if (!isEnrolled) {
+            Alert.alert("Error", "No biometrics enrolled on this device. Please set it up in your device settings.");
+            return;
+        }
+    }
+
+    setIsBiometricEnabled(value);
+    await AsyncStorage.setItem('biometric_enabled', value.toString());
+  };
+
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('token');
-    // This will kick the user back to the AuthLoading screen, which will redirect to Login
     navigation.navigate('AuthLoading');
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Settings</Text>
+
+      <View style={styles.menuItem}>
+        <Text style={styles.menuItemText}>Enable Biometric Unlock</Text>
+        <Switch
+            trackColor={{ false: COLORS.disabled, true: COLORS.accent }}
+            thumbColor={COLORS.surface}
+            onValueChange={handleBiometricToggle}
+            value={isBiometricEnabled}
+        />
+      </View>
 
       <TouchableOpacity
         style={styles.menuItem}
@@ -21,7 +63,6 @@ const SettingsScreen = ({ navigation }) => {
         <Text style={styles.menuItemText}>Two-Factor Authentication</Text>
       </TouchableOpacity>
 
-      {/* Placeholder for other settings */}
       <View style={{ flex: 1 }} />
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -48,6 +89,10 @@ const styles = StyleSheet.create({
     borderRadius: SIZES.radius,
     borderWidth: 1,
     borderColor: COLORS.divider,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SIZES.margin,
   },
   menuItemText: {
     ...FONTS.body,

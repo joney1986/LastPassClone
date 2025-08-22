@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import React, { useEffect, useContext } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import { AppContext } from '../context/AppContext';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import * as SecureStore from 'expo-secure-store';
@@ -15,6 +16,7 @@ import PasswordHistoryScreen from '../screens/PasswordHistoryScreen';
 import NoteDetailScreen from '../screens/NoteDetailScreen';
 import TwoFASetupScreen from '../screens/TwoFASetupScreen';
 import TwoFALoginScreen from '../screens/TwoFALoginScreen';
+import UnlockScreen from '../screens/UnlockScreen';
 
 const RootStack = createStackNavigator();
 const MainStack = createStackNavigator();
@@ -69,16 +71,27 @@ const MainStackNavigator = () => (
 
 
 const AppNavigator = () => {
+  const { isLocked, unlockApp } = useContext(AppContext);
+
   return (
-    <NavigationContainer>
-      <RootStack.Navigator mode="modal">
-        <RootStack.Screen name="Main" component={MainStackNavigator} options={{ headerShown: false }} />
-        <RootStack.Screen name="PasswordModal" component={PasswordModalScreen} options={{ headerShown: false }} />
-        <RootStack.Screen name="PasswordHistory" component={PasswordHistoryScreen} />
-        <RootStack.Screen name="NoteDetail" component={NoteDetailScreen} options={{ headerShown: false }} />
-      </RootStack.Navigator>
-    </NavigationContainer>
+    <View style={styles.container}>
+        <NavigationContainer>
+            <RootStack.Navigator mode="modal">
+                <RootStack.Screen name="Main" component={MainStackNavigator} options={{ headerShown: false }} />
+                <RootStack.Screen name="PasswordModal" component={PasswordModalScreen} options={{ headerShown: false }} />
+                <RootStack.Screen name="PasswordHistory" component={PasswordHistoryScreen} />
+                <RootStack.Screen name="NoteDetail" component={NoteDetailScreen} options={{ headerShown: false }} />
+            </RootStack.Navigator>
+        </NavigationContainer>
+        {isLocked && <UnlockScreen onUnlock={unlockApp} />}
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    }
+});
 
 export default AppNavigator;

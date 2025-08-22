@@ -1,6 +1,7 @@
 import React from 'react';
 import AppNavigator from './navigation/AppNavigator';
 import { useFonts } from 'expo-font';
+import { AppProvider } from './context/AppContext';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -13,5 +14,9 @@ export default function App() {
     return null; // or a loading indicator
   }
 
-  return <AppNavigator />;
+  return (
+    <AppProvider>
+      <AppNavigator />
+    </AppProvider>
+  );
 }
