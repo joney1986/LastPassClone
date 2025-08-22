@@ -75,6 +75,30 @@ router.get('/:id', (req, res) => {
     });
   });
 
+// GET password history by id
+router.get('/:id/history', (req, res) => {
+    const passwordId = req.params.id;
+    const userId = req.user.id;
+
+    const sql = `
+      SELECT h.* FROM password_history h
+      JOIN passwords p ON h.password_id = p.id
+      WHERE h.password_id = ? AND p.user_id = ?
+      ORDER BY h.created_at DESC
+    `;
+
+    db.all(sql, [passwordId, userId], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        const decryptedRows = rows.map(row => ({
+            ...row,
+            password: decrypt(row.password)
+        }));
+        res.json({ data: decryptedRows });
+    });
+});
+
 // PUT (update) a password by id
 router.put('/:id',
   body('site').notEmpty().trim().escape(),
@@ -88,20 +112,59 @@ router.put('/:id',
     }
 
     const { site, username, password, category } = req.body;
-    const encryptedPassword = encrypt(password);
-  const sql = 'UPDATE passwords SET site = ?, username = ?, password = ?, category = ? WHERE id = ? AND user_id = ?';
-  const params = [site, username, encryptedPassword, category, req.params.id, req.user.id];
+    const passwordId = req.params.id;
+    const userId = req.user.id;
 
-  db.run(sql, params, function (err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    if (this.changes === 0) {
-        return res.status(404).json({ error: 'Password not found or user not authorized' });
-    }
-    res.json({ message: 'Password updated successfully' });
+    db.serialize(() => {
+      // Begin transaction
+      db.run("BEGIN TRANSACTION");
+
+      // 1. Get the current password
+      const selectSql = "SELECT * FROM passwords WHERE id = ? AND user_id = ?";
+      db.get(selectSql, [passwordId, userId], (err, row) => {
+        if (err) {
+          db.run("ROLLBACK");
+          return res.status(500).json({ error: "Database error while fetching password." });
+        }
+        if (!row) {
+          db.run("ROLLBACK");
+          return res.status(404).json({ error: "Password not found or user not authorized." });
+        }
+
+        // 2. Insert current version into history
+        const insertHistorySql = `
+          INSERT INTO password_history (password_id, site, username, password, category)
+          VALUES (?, ?, ?, ?, ?)`;
+        const historyParams = [row.id, row.site, row.username, row.password, row.category];
+
+        db.run(insertHistorySql, historyParams, (err) => {
+          if (err) {
+            db.run("ROLLBACK");
+            return res.status(500).json({ error: "Failed to save password history." });
+          }
+
+          // 3. Update the password with new details
+          const encryptedPassword = encrypt(password);
+          const updateSql = `
+            UPDATE passwords
+            SET site = ?, username = ?, password = ?, category = ?
+            WHERE id = ? AND user_id = ?`;
+          const updateParams = [site, username, encryptedPassword, category, passwordId, userId];
+
+          db.run(updateSql, updateParams, function(err) {
+            if (err) {
+              db.run("ROLLBACK");
+              return res.status(500).json({ error: "Failed to update password." });
+            }
+
+            // Commit transaction
+            db.run("COMMIT");
+            res.json({ message: 'Password updated successfully' });
+          });
+        });
+      });
+    });
   });
-});
 
 // DELETE a password by id
 router.delete('/:id', (req, res) => {

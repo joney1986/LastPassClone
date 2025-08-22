@@ -43,6 +43,25 @@ const db = new sqlite3.Database(DBSOURCE, (err) => {
                 console.log('Passwords table created.');
             }
         });
+
+        // Password History table
+        db.run(`CREATE TABLE IF NOT EXISTS password_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            password_id INTEGER NOT NULL,
+            site TEXT NOT NULL,
+            username TEXT NOT NULL,
+            password TEXT NOT NULL,
+            category TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (password_id) REFERENCES passwords(id) ON DELETE CASCADE
+        )`,
+        (err) => {
+            if (err) {
+                // Table already exists
+            } else {
+                console.log('Password history table created.');
+            }
+        });
     }
 });
 

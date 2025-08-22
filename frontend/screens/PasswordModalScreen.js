@@ -83,7 +83,12 @@ const PasswordModalScreen = ({ route, navigation }) => {
         <Button title="Generate" onPress={() => setPassword(generatePassword())} />
       </View>
       <Button title="Save" onPress={handleSave} />
-      {isEditMode && <Button title="Delete" onPress={handleDelete} color="red" />}
+      {isEditMode && (
+        <View style={styles.buttonContainer}>
+            <Button title="Delete" onPress={handleDelete} color="red" />
+            <Button title="View History" onPress={() => navigation.navigate('PasswordHistory', { passwordId })} />
+        </View>
+      )}
     </View>
   );
 };
@@ -144,6 +149,11 @@ const styles = StyleSheet.create({
       height: 40,
       paddingHorizontal: 8,
       flex: 1,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 20,
     }
   });
 

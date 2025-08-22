@@ -8,6 +8,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import PasswordModalScreen from '../screens/PasswordModalScreen';
+import PasswordHistoryScreen from '../screens/PasswordHistoryScreen';
 
 const RootStack = createStackNavigator();
 const MainStack = createStackNavigator();
@@ -45,6 +46,7 @@ const AppNavigator = () => {
       <RootStack.Navigator mode="modal">
         <RootStack.Screen name="Main" component={MainStackNavigator} options={{ headerShown: false }} />
         <RootStack.Screen name="PasswordModal" component={PasswordModalScreen} options={{ headerShown: false }} />
+        <RootStack.Screen name="PasswordHistory" component={PasswordHistoryScreen} />
       </RootStack.Navigator>
     </NavigationContainer>
   );
