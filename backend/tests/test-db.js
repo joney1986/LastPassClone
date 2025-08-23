@@ -45,6 +45,22 @@ const TABLE_SCHEMAS = [
         FOR EACH ROW
         BEGIN
             UPDATE secure_notes SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+        END`,
+    `CREATE TABLE secure_files (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        file_name_encrypted TEXT NOT NULL,
+        file_type TEXT NOT NULL,
+        storage_path TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`,
+    `CREATE TRIGGER update_files_updated_at
+        AFTER UPDATE ON secure_files
+        FOR EACH ROW
+        BEGIN
+            UPDATE secure_files SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
         END`
 ];
 
@@ -73,7 +89,7 @@ const setupDatabase = () => {
 const clearDatabase = (db) => {
     return new Promise((resolve, reject) => {
         db.serialize(() => {
-            const tables = ['password_history', 'passwords', 'secure_notes', 'users'];
+            const tables = ['password_history', 'passwords', 'secure_notes', 'secure_files', 'users'];
             tables.forEach((table, index) => {
                 const isLast = index === tables.length - 1;
                 db.run(`DELETE FROM ${table}`, (err) => {

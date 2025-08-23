@@ -59,6 +59,10 @@ Follow these instructions to get a copy of the project up and running on your lo
       cp .env.example .env
       ```
     - Open the new `.env` file and replace the placeholder values with your own secure, random secrets.
+
+    #### Database Setup
+    The application uses SQLite, and the database is configured to be created automatically. When you start the server for the first time, a `db.sqlite` file will be created in the `backend` directory and all necessary tables will be set up. No manual database configuration is needed.
+
 4.  **Start the backend server:**
     ```bash
     npm start

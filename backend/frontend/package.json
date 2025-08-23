@@ -4,7 +4,10 @@
     "@react-navigation/bottom-tabs": "^7.4.6",
     "crypto-js": "^4.2.0",
     "expo-crypto": "^14.1.5",
+    "expo-document-picker": "~13.1.6",
+    "expo-file-system": "~18.1.11",
     "expo-local-authentication": "^16.0.5",
+    "expo-sharing": "~13.1.5",
     "react-native-qrcode-svg": "^6.3.15"
   }
 }

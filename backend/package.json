@@ -19,6 +19,7 @@
     "jade": "~1.11.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "~1.9.1",
+    "multer": "^2.0.2",
     "qrcode": "^1.5.3",
     "sqlite3": "^5.1.7"
   },
