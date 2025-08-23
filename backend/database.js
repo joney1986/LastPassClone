@@ -85,6 +85,30 @@ const db = new sqlite3.Database(DBSOURCE, (err) => {
                 UPDATE secure_notes SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
             END;
         `);
+
+        // Secure Files table
+        db.run(`CREATE TABLE IF NOT EXISTS secure_files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            file_name_encrypted TEXT NOT NULL,
+            file_type TEXT NOT NULL,
+            storage_path TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )`,
+        (err) => {
+            if (err) { /* Table already exists */ } else { console.log('Secure files table created.'); }
+        });
+
+        db.run(`
+            CREATE TRIGGER IF NOT EXISTS update_files_updated_at
+            AFTER UPDATE ON secure_files
+            FOR EACH ROW
+            BEGIN
+                UPDATE secure_files SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+            END;
+        `);
     }
 });
 

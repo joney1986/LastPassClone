@@ -10,6 +10,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import NotesListScreen from '../screens/NotesListScreen';
+import FilesListScreen from '../screens/FilesListScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import PasswordModalScreen from '../screens/PasswordModalScreen';
 import PasswordHistoryScreen from '../screens/PasswordHistoryScreen';
@@ -53,6 +54,7 @@ const TabNavigator = () => {
         >
             <Tab.Screen name="Passwords" component={HomeScreen} />
             <Tab.Screen name="Secure Notes" component={NotesListScreen} />
+            <Tab.Screen name="Files" component={FilesListScreen} />
             <Tab.Screen name="Settings" component={SettingsScreen} />
         </Tab.Navigator>
     );
