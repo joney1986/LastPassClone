@@ -1,51 +1,32 @@
 const request = require('supertest');
-const app = require('../app');
-const db = require('../database');
-const bcrypt = require('bcrypt');
+const { setupDatabase, clearDatabase } = require('./test-db');
 const speakeasy = require('speakeasy');
+const db = require('../database'); // This is now the mock from __mocks__
+const app = require('../app');
 
-// Helper function to run migrations for a clean state
-const runMigrations = () => {
-    return new Promise((resolve, reject) => {
-        db.serialize(() => {
-            db.run(`
-                CREATE TABLE users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE,
-                    password TEXT,
-                    master_password_salt TEXT,
-                    encrypted_vault_key TEXT,
-                    two_fa_secret TEXT,
-                    two_fa_enabled INTEGER DEFAULT 0
-                )
-            `, (err) => { if (err) return reject(err); });
-            db.run(`CREATE TABLE passwords (id INTEGER PRIMARY KEY, user_id INTEGER)`, (err) => { if (err) return reject(err); });
-            db.run(`CREATE TABLE notes (id INTEGER PRIMARY KEY, user_id INTEGER)`, (err) => { if (err) return reject(err); resolve(); });
-        });
-    });
-};
-
-// Helper function to clear tables
-const clearDatabase = () => {
-    return new Promise((resolve, reject) => {
-        db.serialize(() => {
-            db.run('DELETE FROM notes', (err) => { if (err) return reject(err); });
-            db.run('DELETE FROM passwords', (err) => { if (err) return reject(err); });
-            db.run('DELETE FROM users', (err) => { if (err) return reject(err); resolve(); });
-        });
-    });
-};
-
+// This tells Jest to use the manual mock in __mocks__/database.js
+jest.mock('../database');
 
 describe('User Authentication API', () => {
+    let testDb; // This will be the real database instance
     let authToken;
 
     beforeAll(async () => {
-        await runMigrations();
+        // Set up the real test database
+        testDb = await setupDatabase();
+
+        // Re-wire the mock to use the real test database
+        db.get.mockImplementation(testDb.get.bind(testDb));
+        db.all.mockImplementation(testDb.all.bind(testDb));
+        db.run.mockImplementation(testDb.run.bind(testDb));
+        db.serialize.mockImplementation(testDb.serialize.bind(testDb));
+        db.close.mockImplementation(testDb.close.bind(testDb));
     });
 
     beforeEach(async () => {
-        await clearDatabase();
+        // Clear the real database before each test
+        await clearDatabase(testDb);
+
         // Register and login a user to get a token for authenticated requests
         await request(app).post('/api/users/register').send({
             username: 'testuser', password: 'password123', encryptedVaultKey: 'key', masterPasswordSalt: 'salt'
@@ -55,8 +36,9 @@ describe('User Authentication API', () => {
     });
 
     afterAll((done) => {
-        db.close((err) => {
-            if (err) return console.error(err.message);
+        // Close the real database connection
+        testDb.close((err) => {
+            if (err) console.error(err.message);
             done();
         });
     });
