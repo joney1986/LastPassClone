@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
+import PasswordGeneratorModal from '../components/PasswordGeneratorModal';
 import { VaultContext } from '../context/VaultContext';
 import { encryptData, decryptData } from '../utils/crypto';
 
@@ -13,6 +14,7 @@ const PasswordModalScreen = ({ route, navigation }) => {
   const [category, setCategory] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
   const [passwordId, setPasswordId] = useState(null);
+  const [isGeneratorVisible, setIsGeneratorVisible] = useState(false);
 
   useEffect(() => {
     if (route.params?.password) {
@@ -73,28 +75,23 @@ const PasswordModalScreen = ({ route, navigation }) => {
     }
   };
 
-  const generatePassword = (length = 16) => {
-    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
-    let newPassword = "";
-    for (let i = 0; i < length; ++i) {
-        newPassword += charset.charAt(Math.floor(Math.random() * charset.length));
-    }
-    // A simple shuffle
-    return newPassword.split('').sort(() => 0.5 - Math.random()).join('');
-  };
-
   return (
     <View style={styles.container}>
-        <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.closeButtonText}>X</Text>
-        </TouchableOpacity>
+      <PasswordGeneratorModal
+        visible={isGeneratorVisible}
+        onClose={() => setIsGeneratorVisible(false)}
+        onUsePassword={(newPassword) => setPassword(newPassword)}
+      />
+      <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.closeButtonText}>X</Text>
+      </TouchableOpacity>
       <Text style={styles.title}>{isEditMode ? 'Edit Password' : 'Add Password'}</Text>
       <TextInput style={styles.input} placeholder="Website" value={site} onChangeText={setSite} placeholderTextColor={COLORS.textSecondary} />
       <TextInput style={styles.input} placeholder="Username" value={username} onChangeText={setUsername} placeholderTextColor={COLORS.textSecondary} />
       <TextInput style={styles.input} placeholder="Category (optional)" value={category} onChangeText={setCategory} placeholderTextColor={COLORS.textSecondary} />
       <View style={styles.passwordContainer}>
         <TextInput style={styles.passwordInput} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry placeholderTextColor={COLORS.textSecondary} />
-        <TouchableOpacity style={styles.generateButton} onPress={() => setPassword(generatePassword())}>
+        <TouchableOpacity style={styles.generateButton} onPress={() => setIsGeneratorVisible(true)}>
             <Text style={styles.generateButtonText}>Generate</Text>
         </TouchableOpacity>
       </View>
